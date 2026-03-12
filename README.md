@@ -64,7 +64,7 @@ dotnet run --project ToDoConsoleApp
 - Todos/Update.sql → Update existing todo.
 - Todos/Delete.sql → Delete todo by ID.
 
-### Scripts are loaded via SqlScriptLoader, which supports embedded resources and file‑based loading with caching.
+#### *Scripts are loaded via SqlScriptLoader, which supports embedded resources and file‑based loading with caching.*
 
 ## 📝 Logging
 
