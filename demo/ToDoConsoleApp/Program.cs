@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using ToDoConsoleApp.Application.Interfaces;
 using ToDoConsoleApp.Application.Services;
 using ToDoConsoleApp.Infrastructure.Database;
+using ToDoConsoleApp.Infrastructure.Encryption;
 using ToDoConsoleApp.Infrastructure.Persistence;
 using ToDoConsoleApp.Presentation;
 using ToDoConsoleApp.Utils;
@@ -32,10 +33,21 @@ services.AddLogging(builder =>
 // Configuration
 services.AddSingleton(configuration);
 
+// encryption configuration
+
+// encryption configuration
+var encryptionConfig = new FileEncryptionConfiguration(
+    pfxPath: configuration.GetValue<string>("AlwaysEncrypt:CertificatePath") ?? "",
+    password: configuration.GetValue<string>("AlwaysEncrypt:CertificatePassword") ?? ""
+);
+
 // Infrastructure
-services.AddSingleton(new DatabaseConnectionFactory(
-    configuration.GetConnectionString("DefaultConnection") 
-    ?? throw new InvalidOperationException("Connection string not found")));
+services.AddSingleton<DatabaseConnectionFactory>(provider => 
+    new DatabaseConnectionFactory(
+        configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string not found"),
+        encryptionConfig,
+        provider.GetRequiredService<ILogger<DatabaseConnectionFactory>>())
+);
 
 services.AddSingleton<SqlScriptLoader>(provider => 
     new SqlScriptLoader(

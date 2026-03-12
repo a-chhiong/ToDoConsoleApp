@@ -1,5 +1,7 @@
 using System.Data.Common;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Logging;
+using ToDoConsoleApp.Infrastructure.Encryption;
 
 namespace ToDoConsoleApp.Infrastructure.Database;
 
@@ -10,13 +12,17 @@ namespace ToDoConsoleApp.Infrastructure.Database;
 public class DatabaseConnectionFactory
 {
     private readonly string _connectionString;
+    private readonly IEncryptionConfiguration? _encryptionConfig;
+    private readonly ILogger<DatabaseConnectionFactory>? _logger;
 
-    public DatabaseConnectionFactory(string connectionString)
+    public DatabaseConnectionFactory(
+        string connectionString, 
+        IEncryptionConfiguration? encryptionConfig = null, 
+        ILogger<DatabaseConnectionFactory>? logger = null)
     {
-        if (string.IsNullOrWhiteSpace(connectionString))
-            throw new ArgumentException("Connection string cannot be null or empty.", nameof(connectionString));
-
         _connectionString = connectionString;
+        _encryptionConfig = encryptionConfig;
+        _logger = logger;
     }
 
     /// <summary>
@@ -25,16 +31,10 @@ public class DatabaseConnectionFactory
     /// </summary>
     public DbConnection CreateConnection()
     {
-        return new SqlConnection(_connectionString);
-    }
-
-    /// <summary>
-    /// Opens a connection asynchronously.
-    /// </summary>
-    public async Task<DbConnection> CreateConnectionAsync()
-    {
-        var connection = new SqlConnection(_connectionString);
-        await connection.OpenAsync();
-        return connection;
+        _logger?.LogDebug("Creating database connection with Always Encrypt: {AlwaysEncryptEnabled}", _encryptionConfig != null);
+        
+        return _encryptionConfig != null ? 
+            _encryptionConfig.ConfigureConnection(_connectionString) 
+            : new SqlConnection(_connectionString);
     }
 }

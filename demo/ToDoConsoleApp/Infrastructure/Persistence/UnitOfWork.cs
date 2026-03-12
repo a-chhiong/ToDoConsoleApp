@@ -3,7 +3,7 @@ using System.Data.Common;
 using ToDoConsoleApp.Application.Interfaces;
 using ToDoConsoleApp.Infrastructure.Repositories;
 
-namespace ToDoConsoleApp.Infrastructure.Database;
+namespace ToDoConsoleApp.Infrastructure.Persistence;
 
 /// <summary>
 /// Unit of Work pattern implementation for managing transactions and repositories.

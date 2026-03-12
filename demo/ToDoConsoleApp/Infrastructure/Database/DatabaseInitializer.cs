@@ -3,7 +3,7 @@ using System.Data.Common;
 using Microsoft.Extensions.Logging;
 using ToDoConsoleApp.Utils;
 
-namespace ToDoConsoleApp.Infrastructure.Persistence;
+namespace ToDoConsoleApp.Infrastructure.Database;
 
 /// <summary>
 /// Initializes the database schema on application startup.
@@ -37,15 +37,12 @@ public class DatabaseInitializer
             if (_connection.State == ConnectionState.Closed)
                 await _connection.OpenAsync(cancellationToken);
 
-            var schemaScript = _scriptLoader.LoadScript("Schema/CreateTodoTable.sql");
+            // Run schema creation script
+            await ExecuteScriptAsync("Schema/CreateTodoTable.sql", cancellationToken);
 
-            using (var command = _connection.CreateCommand())
-            {
-                command.CommandText = schemaScript;
-                command.CommandTimeout = 60;
-                await command.ExecuteNonQueryAsync(cancellationToken);
-            }
-
+            // Run Always Encrypted setup script
+            await ExecuteScriptAsync("Schema/AlwaysEncrypt.sql", cancellationToken);
+            
             _logger.LogInformation("Database initialization completed successfully");
         }
         catch (Exception ex)
@@ -56,7 +53,25 @@ public class DatabaseInitializer
         finally
         {
             if (_connection.State == ConnectionState.Open)
-                _connection.Close();
+                await _connection.CloseAsync();
         }
+    }
+    
+    private async Task ExecuteScriptAsync(string scriptPath, CancellationToken cancellationToken)
+    {
+        var script = _scriptLoader.LoadScript(scriptPath);
+
+        if (string.IsNullOrWhiteSpace(script))
+        {
+            _logger.LogWarning("Script {ScriptPath} is empty or not found", scriptPath);
+            return;
+        }
+
+        await using var command = _connection.CreateCommand();
+        command.CommandText = script;
+        command.CommandTimeout = 120; // longer timeout for encryption setup
+        await command.ExecuteNonQueryAsync(cancellationToken);
+
+        _logger.LogInformation("Executed script {ScriptPath}", scriptPath);
     }
 }

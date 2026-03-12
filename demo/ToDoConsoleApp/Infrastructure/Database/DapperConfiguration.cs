@@ -12,7 +12,7 @@ public static class DapperConfiguration
     public static void Configure()
     {
         // Set global command timeout
-        SqlMapper.Settings.CommandTimeout = 30;
+        SqlMapper.Settings.CommandTimeout = 60;
 
         // Configure type mapping for TodoItem
         var todoTypeMap = new CustomPropertyTypeMap(

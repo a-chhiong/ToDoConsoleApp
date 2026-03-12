@@ -57,3 +57,4 @@ nunit-*.xml
 *.pem
 */.idea
 .idea
+.certificate
