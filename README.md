@@ -1,4 +1,4 @@
-# ToDoConsoleApp – Demo
+# ToDoConsoleApp
 > A .net core Console App to demostrate Dapper with SqlBuilder and/or custom SqlScriptLoader approach
 
 **A production‑ready console application** built with .NET 8.0, demonstrating clean architecture, Dapper ORM integration, outsourced SQL scripts, and dependency injection. This demo is designed to showcase maintainable backend patterns with clear separation of concerns.
