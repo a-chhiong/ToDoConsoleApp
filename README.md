@@ -29,13 +29,13 @@ demo/
 
 ## 🚀 Features
 
-- Clean Architecture: Clear separation of Application, Infrastructure, and Presentation layers.
-- Dapper ORM: Lightweight data access with SqlBuilder for dynamic queries.
-- SQL Outsourcing: All queries stored in .sql files for maintainability.
-- Dependency Injection: Configured via Microsoft.Extensions.DependencyInjection.
-- Logging: Configurable via appsettings.json, supports Debug/Info/Warn/Error levels.
-- Database Initialization: Automatic schema creation using outsourced scripts.
-- Interactive Console Menu: Simple UI for CRUD operations on Todo items.
+- **Clean Architecture**: Clear separation of Application, Infrastructure, and Presentation layers.
+- **Dapper ORM**: Lightweight data access with SqlBuilder for dynamic queries.
+- **SQL Outsourcing**: All queries stored in .sql files for maintainability.
+- **Dependency Injection**: Configured via Microsoft.Extensions.DependencyInjection.
+- **Logging**: Configurable via appsettings.json, supports Debug/Info/Warn/Error levels.
+- **Database Initialization**: Automatic schema creation using outsourced scripts.
+- **Interactive Console Menu**: Simple UI for CRUD operations on Todo items.
 
 ## ⚙️ Setup
 
