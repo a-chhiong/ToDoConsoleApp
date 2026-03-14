@@ -1,6 +1,7 @@
 using System.Data;
 using System.Data.Common;
 using Dapper;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using ToDoConsoleApp.Application.Interfaces;
 using ToDoConsoleApp.Domain.Entities;
@@ -15,13 +16,13 @@ namespace ToDoConsoleApp.Infrastructure.Repositories;
 /// </summary>
 public class TodoRepository : ITodoRepository
 {
-    private readonly DbConnection _connection;
+    private readonly SqlConnection _connection;
     private readonly IDbTransaction? _transaction;
     private readonly SqlScriptLoader _scriptLoader;
     private readonly ILogger<TodoRepository>? _logger;
     
     public TodoRepository(
-        DbConnection connection,
+        SqlConnection connection,
         IDbTransaction? transaction = null,
         SqlScriptLoader? scriptLoader = null,
         ILogger<TodoRepository>? logger = null)

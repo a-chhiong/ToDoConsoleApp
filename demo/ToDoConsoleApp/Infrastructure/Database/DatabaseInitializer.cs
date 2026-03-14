@@ -1,6 +1,7 @@
 using System.Data;
-using System.Data.Common;
-using Microsoft.Extensions.Logging;
+using Microsoft.Data.SqlClient;
+using ToDoConsoleApp.Infrastructure.Database.Encryption;
+using ToDoConsoleApp.Infrastructure.Database.Migration;
 using ToDoConsoleApp.Utils;
 
 namespace ToDoConsoleApp.Infrastructure.Database;
@@ -11,18 +12,20 @@ namespace ToDoConsoleApp.Infrastructure.Database;
 /// </summary>
 public class DatabaseInitializer
 {
-    private readonly DbConnection _connection;
+    private readonly IEncryptionConfiguration? _configuration;
+    private readonly SqlConnection _connection;
     private readonly SqlScriptLoader _scriptLoader;
-    private readonly ILogger<DatabaseInitializer> _logger;
-
+    
+    private const string AesKey = "33507e1576e289c10bd5207bfacde493cfefcf4db9153d3a524833813c2b0ee2";
+    
     public DatabaseInitializer(
-        DbConnection connection,
-        SqlScriptLoader scriptLoader,
-        ILogger<DatabaseInitializer> logger)
+        IEncryptionConfiguration? configuration,
+        SqlConnection connection,
+        SqlScriptLoader scriptLoader)
     {
-        _connection = connection ?? throw new ArgumentNullException(nameof(connection));
+        _configuration = configuration;
+        _connection = connection;
         _scriptLoader = scriptLoader ?? throw new ArgumentNullException(nameof(scriptLoader));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <summary>
@@ -32,22 +35,20 @@ public class DatabaseInitializer
     {
         try
         {
-            _logger.LogInformation("Starting database initialization");
-
             if (_connection.State == ConnectionState.Closed)
                 await _connection.OpenAsync(cancellationToken);
 
-            // Run schema creation script
-            await ExecuteScriptAsync("Schema/CreateTodoTable.sql", cancellationToken);
-
-            // Run Always Encrypted setup script
-            await ExecuteScriptAsync("Schema/AlwaysEncrypt.sql", cancellationToken);
+            await new AlwaysEncryptedSetup().RunAsync(_connection, _configuration?.PfxPath, _configuration?.Password, cancellationToken);
             
-            _logger.LogInformation("Database initialization completed successfully");
+            await ExecuteScriptAsync("Schema/CreateMigrationTable.sql", cancellationToken);
+            
+            await ExecuteScriptAsync("Schema/CreateTodoTable.sql", cancellationToken);
+            
+            await new TodoTableMigration().RunAsync(_connection);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during database initialization");
+            Console.WriteLine(ex.Message);
             throw;
         }
         finally
@@ -59,19 +60,23 @@ public class DatabaseInitializer
     
     private async Task ExecuteScriptAsync(string scriptPath, CancellationToken cancellationToken)
     {
-        var script = _scriptLoader.LoadScript(scriptPath);
+        var batches = _scriptLoader.LoadScriptBatches(scriptPath).ToArray();
 
-        if (string.IsNullOrWhiteSpace(script))
+        if (batches.Length == 0)
         {
-            _logger.LogWarning("Script {ScriptPath} is empty or not found", scriptPath);
+            Console.WriteLine($"Script {scriptPath} is empty or not found");
             return;
         }
 
-        await using var command = _connection.CreateCommand();
-        command.CommandText = script;
-        command.CommandTimeout = 120; // longer timeout for encryption setup
-        await command.ExecuteNonQueryAsync(cancellationToken);
-
-        _logger.LogInformation("Executed script {ScriptPath}", scriptPath);
-    }
+        foreach (var batch in batches)
+        {
+            Console.WriteLine($"Executing...\n{batch}\n");
+            await using var command = _connection.CreateCommand();
+            command.CommandText = batch;
+            command.CommandTimeout = 120; // longer timeout for encryption setup
+            await command.ExecuteNonQueryAsync(cancellationToken);
+        }
+        
+        Console.WriteLine($"Executed script {scriptPath}");
+    } 
 }

@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using ToDoConsoleApp.Application.Interfaces;
 using ToDoConsoleApp.Application.Services;
 using ToDoConsoleApp.Infrastructure.Database;
-using ToDoConsoleApp.Infrastructure.Encryption;
+using ToDoConsoleApp.Infrastructure.Database.Encryption;
 using ToDoConsoleApp.Infrastructure.Persistence;
 using ToDoConsoleApp.Presentation;
 using ToDoConsoleApp.Utils;
@@ -32,8 +32,6 @@ services.AddLogging(builder =>
 
 // Configuration
 services.AddSingleton(configuration);
-
-// encryption configuration
 
 // encryption configuration
 var encryptionConfig = new FileEncryptionConfiguration(
@@ -82,10 +80,11 @@ try
     logger.LogInformation("Initializing database...");
     var connectionFactory = serviceProvider.GetRequiredService<DatabaseConnectionFactory>();
     var scriptLoader = serviceProvider.GetRequiredService<SqlScriptLoader>();
+    
     var dbInitializer = new DatabaseInitializer(
+        encryptionConfig,
         connectionFactory.CreateConnection(),
-        scriptLoader,
-        serviceProvider.GetRequiredService<ILogger<DatabaseInitializer>>()
+        scriptLoader
     );
 
     await dbInitializer.InitializeAsync();

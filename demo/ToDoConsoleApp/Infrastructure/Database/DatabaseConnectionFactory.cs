@@ -1,7 +1,6 @@
-using System.Data.Common;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
-using ToDoConsoleApp.Infrastructure.Encryption;
+using ToDoConsoleApp.Infrastructure.Database.Encryption;
 
 namespace ToDoConsoleApp.Infrastructure.Database;
 
@@ -11,8 +10,6 @@ namespace ToDoConsoleApp.Infrastructure.Database;
 /// </summary>
 public class DatabaseConnectionFactory
 {
-    private readonly string _connectionString;
-    private readonly IEncryptionConfiguration? _encryptionConfig;
     private readonly ILogger<DatabaseConnectionFactory>? _logger;
 
     public DatabaseConnectionFactory(
@@ -20,8 +17,8 @@ public class DatabaseConnectionFactory
         IEncryptionConfiguration? encryptionConfig = null, 
         ILogger<DatabaseConnectionFactory>? logger = null)
     {
-        _connectionString = connectionString;
-        _encryptionConfig = encryptionConfig;
+        ConnectionString = connectionString;
+        EncryptionConfig = encryptionConfig;
         _logger = logger;
     }
 
@@ -29,12 +26,15 @@ public class DatabaseConnectionFactory
     /// Creates and returns a new database connection.
     /// Caller is responsible for proper disposal.
     /// </summary>
-    public DbConnection CreateConnection()
+    public SqlConnection CreateConnection()
     {
-        _logger?.LogDebug("Creating database connection with Always Encrypt: {AlwaysEncryptEnabled}", _encryptionConfig != null);
+        _logger?.LogDebug("Creating database connection with Always Encrypt: {AlwaysEncryptEnabled}", EncryptionConfig != null);
         
-        return _encryptionConfig != null ? 
-            _encryptionConfig.ConfigureConnection(_connectionString) 
-            : new SqlConnection(_connectionString);
+        return EncryptionConfig != null ? 
+            EncryptionConfig.CreateConnection(ConnectionString) 
+            : new SqlConnection(ConnectionString);
     }
+    
+    public string ConnectionString { get; }
+    public IEncryptionConfiguration? EncryptionConfig { get; }
 }

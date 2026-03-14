@@ -4,7 +4,10 @@
 -- This script creates the base schema for the Todo application
 -- Run this once during initial database setup
 
-IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Todos]') AND type in (N'U'))
+IF NOT EXISTS (
+   SELECT * FROM sys.objects 
+   WHERE object_id = OBJECT_ID(N'[dbo].[Todos]') AND type in (N'U')
+)
 BEGIN
     PRINT 'Creating Todos table...';
     

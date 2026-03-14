@@ -1,5 +1,6 @@
 using System.Data;
 using System.Data.Common;
+using Microsoft.Data.SqlClient;
 using ToDoConsoleApp.Application.Interfaces;
 using ToDoConsoleApp.Infrastructure.Repositories;
 
@@ -24,7 +25,7 @@ public class UnitOfWork : IUnitOfWork
     {
         get
         {
-            if (_todoRepository == null && _connection is DbConnection connection)
+            if (_todoRepository == null && _connection is SqlConnection connection)
                 _todoRepository = new TodoRepository(connection, _transaction);
             return _todoRepository;
         }

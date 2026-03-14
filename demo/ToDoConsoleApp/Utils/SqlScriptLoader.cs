@@ -55,12 +55,16 @@ public class SqlScriptLoader
             throw new FileNotFoundException($"SQL script not found: {scriptPath} (embedded or file-based)");
         }
 
-        // Normalize and cache
-        script = NormalizeSql(script);
         ScriptCache[scriptPath] = script;
 
         _logger?.LogDebug("Loaded and cached script: {ScriptPath}", scriptPath);
         return script;
+    }
+
+    // Split the file into batches (in case you use 'GO')
+    public IEnumerable<string> LoadScriptBatches(string scriptPath)
+    {
+        return GetBatches(LoadScript(scriptPath));
     }
 
     /// <summary>
@@ -76,21 +80,17 @@ public class SqlScriptLoader
 
             _logger?.LogDebug("Attempting to load embedded resource: {ResourceName}", resourceName);
 
-            using (var stream = assembly.GetManifestResourceStream(resourceName))
+            using var stream = assembly.GetManifestResourceStream(resourceName);
+            if (stream == null)
             {
-                if (stream == null)
-                {
-                    _logger?.LogDebug("Embedded resource not found: {ResourceName}", resourceName);
-                    return null;
-                }
-
-                using (var reader = new StreamReader(stream, Encoding.UTF8))
-                {
-                    var content = reader.ReadToEnd();
-                    _logger?.LogDebug("Loaded embedded resource: {ResourceName}", resourceName);
-                    return content;
-                }
+                _logger?.LogDebug("Embedded resource not found: {ResourceName}", resourceName);
+                return null;
             }
+
+            using var reader = new StreamReader(stream, Encoding.UTF8);
+            var content = reader.ReadToEnd();
+            _logger?.LogDebug("Loaded embedded resource: {ResourceName}", resourceName);
+            return content;
         }
         catch (Exception ex)
         {
@@ -128,20 +128,16 @@ public class SqlScriptLoader
     }
 
     /// <summary>
-    /// Normalizes SQL by removing comments and excess whitespace.
+    /// Splits a script into individual batches based on the 'GO' keyword.
     /// </summary>
-    private static string NormalizeSql(string sql)
+    private static IEnumerable<string> GetBatches(string script)
     {
-        // Remove line comments (-- comment)
-        sql = Regex.Replace(sql, @"--[^\r\n]*", "");
+        if (string.IsNullOrWhiteSpace(script))
+            return [];
 
-        // Remove block comments (/* comment */)
-        sql = Regex.Replace(sql, @"/\*.*?\*/", "", RegexOptions.Singleline);
-
-        // Replace multiple spaces/tabs/newlines with single space
-        sql = Regex.Replace(sql, @"\s+", " ");
-
-        return sql.Trim();
+        // Split by 'GO' on its own line (case-insensitive)
+        return Regex.Split(script, @"^\s*GO\s*$", RegexOptions.Multiline | RegexOptions.IgnoreCase)
+            .Where(batch => !string.IsNullOrWhiteSpace(batch));
     }
 
     /// <summary>
